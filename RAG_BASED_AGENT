@@ -1,0 +1,25 @@
+    def rag_based_agent(self, state: AgentState) -> AgentState:
+        print("\n \n In RAG Based Agent")
+
+        # Initialize vector store
+        vector_store = Initialize_vector_store()
+
+        # Get context from vector DB
+        retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+        retrieved_docs = retriever.invoke(state.query)
+
+        retrieved_text = "\n".join([doc.page_content.strip() for doc in retrieved_docs])
+        print(f"\nRetrieved Documents: {retrieved_text}\n")
+
+        prompt = RAG_BASED_AGENT_PROMPT.format(
+            query=state.query,
+            data=retrieved_docs,
+            context_history="\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in state.context_history[-10:]] if state.context_history else "")
+        )
+
+        messages = [AIMessage(content=prompt)]
+        response = llm.invoke(messages)
+        print(f"\n RAG Based Agent Response: {response.content} \n")
+
+        context_history = state.context_history.copy()
+        context_history.append({"role": "assistant", "content": response.content})
